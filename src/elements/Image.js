@@ -32,9 +32,17 @@ const Image = (props) => {
 
 Image.defaultProps = {
   shape: "circle",
-  src: "https://i.ytimg.com/vi/Ct1Pp_4FEIY/maxresdefault.jpg",
+  src: "https://mean0images.s3.ap-northeast-2.amazonaws.com/4.jpeg",
   size: 36,
 };
+
+const ImageDefault = styled.div`
+  --size: ${(props) => props.size}px;
+  width: var(--size);
+  height: var(--size);
+  background-image: url("${(props) => props.src}");
+  background-size: cover;
+`;
 
 const AspectOutter = styled.div`
     width: 100%;
@@ -48,15 +56,6 @@ const AspectInner = styled.div`
     background-image: url("${(props) => props.src}");
     background-size: cover;
 `;
-
-const ImageDefault = styled.div`
-  --size: ${(props) => props.size}px;
-  width: var(--size);
-  height: var(--size);
-  background-image: url("${(props) => props.src}");
-  background-size: cover;
-`;
-
 
 const ImageCircle = styled.div`
     --size: ${(props) => props.size}px;

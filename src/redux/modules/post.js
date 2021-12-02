@@ -1,148 +1,48 @@
-// post.js
+import { createAction, handleActions } from "redux-actions";
+import { produce } from "immer";
+import { firestore, storage } from "../../shared/firebase";
 
-import { createAction, handleActions } from "redux-actions"; // 액션, 리듀서 쉽게 만들어 줌
-import { produce } from "immer"; // 불변성 관리
-import { firestore, storage } from "../../shared/firebase"; // 파이어스토어 연동하기 + 스토리지 연동하기
 import moment from "moment";
+
 import { actionCreators as imageActions } from "./image";
 
-// 액션 타입
-const SET_POST = "SET_POST"; // firebase에서 목록을 가져와서 redux에 넣어주는 액션
-const ADD_POST = "ADD_POST"; // redux 데이터에 게시물 추가 해주는 액션
-const EDIT_POST = "EDIT_POST"; // redux 데이터에 게시물 수정 해주는 액션
+const SET_POST = "SET_POST";
+const ADD_POST = "ADD_POST";
+const EDIT_POST = "EDIT_POST";
+const LOADING = "LOADING"; // 데이터를 가져올 때 로딩 중인 지 아닌 지 판별
 
-// 액션 생성자
-const setPost = createAction(SET_POST, (post_list) => ({ post_list }));
-const addPost = createAction(ADD_POST, (post_list) => ({ post_list }));
+const setPost = createAction(SET_POST, (post_list, paging) => ({
+  post_list,
+  paging,
+}));
+const addPost = createAction(ADD_POST, (post) => ({ post }));
 const editPost = createAction(EDIT_POST, (post_id, post) => ({
   post_id,
   post,
 }));
+const loading = createAction(LOADING, (is_loading) => ({ is_loading }));
 
-// 초기값 설정
 const initialState = {
-  // 리듀서가 사용할 초기값
   list: [],
+  paging: {
+    // 페이징 정보를 담는다.
+    start: null, // 시작점
+    next: null, // 다음 게 있는 지 없는 지
+    size: 3, // 몇 개 가져 올건지
+  },
+  is_loading: false, // 로딩 중인지 아닌 지 판별
 };
 
 const initialPost = {
-  image_url: "",
+  // id: 0,
+  // user_info: {
+  //   user_name: "mean0",
+  //   user_profile: "https://mean0images.s3.ap-northeast-2.amazonaws.com/4.jpeg",
+  // },
+  image_url: "https://mean0images.s3.ap-northeast-2.amazonaws.com/4.jpeg",
   contents: "",
   comment_cnt: 0,
   insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
-};
-
-// 미들웨어
-const getPostFB = () => {
-  return function (dispatch, getState, { history }) {
-    const postDB = firestore.collection("post");
-
-    postDB.get().then((docs) => {
-      let post_list = [];
-
-      docs.forEach((doc) => {
-        // console.log(doc.id, doc.data())
-        // 데이터 생김새를 맞춰준다.
-        let _post = {
-          id: doc.id,
-          ...doc.data(),
-        };
-
-        let post = {
-          id: doc.id,
-          user_info: {
-            user_name: _post.user_name,
-            user_profile: _post.user_profile,
-            user_id: _post.user_id,
-          },
-          image_url: _post.image_url,
-          contents: _post.contents,
-          comment_cnt: _post.comment_cnt,
-          insert_dt: _post.insert_dt,
-        };
-
-        post_list.push(post);
-        // post를 배열 형태로 만든다.
-
-        // [고급 버전]
-        //   let __post = doc.data();
-
-        //   // ['comment_cnt', 'contents' ...]
-        //   let post = Object.keys(__post).reduce((acc, cur) => {
-        //     if(cur.indexOf("user_") !== -1){
-        //       return {...acc, user_info: {...acc.user.info, [cur] : __post[cur]}}
-        //     }
-        //     return {...acc, [cur] : __post[cur]};
-        //   }, {id : doc.id, user_info : {}});
-
-        //   post_list.push(post)
-      });
-
-      dispatch(setPost(post_list));
-    });
-  };
-};
-
-const addPostFB = (contents = "") => {
-  return function (dispatch, getState, { history }) {
-    const postDB = firestore.collection("post");
-
-    const _user = getState().user.user; // getState : 스토어에 있는 정보를 불러온다.
-
-    const user_info = {
-      user_name: _user.user_name,
-      user_id: _user.uid,
-      user_profile: _user.user_profile,
-    };
-
-    const _post = {
-      ...initialPost,
-      contents: contents,
-      insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
-    };
-
-    const _image = getState().image.preview;
-    // image 모듈에서 preview에 넣어준 값을 게시물 작성을 누르면 가져온다.
-    // 파일 객체 타입은 string으로 가지고 온다.
-
-    const _upload = storage
-      .ref(`images/${user_info.user_id}_${new Date().getTime()}`)
-      .putString(_image, "data_url");
-
-    _upload.then((snapshot) => {
-      snapshot.ref
-        .getDownloadURL()
-        .then((url) => {
-          // url을 확인해봐요!
-          console.log(url);
-
-          return url;
-        })
-        .then((url) => {
-          // ~~~.add({추가할 정보})
-          postDB
-            .add({ ...user_info, ..._post, image_url: url }) // firestore에 데이터 추가
-            .then((doc) => {
-              // 아이디를 추가한다.
-              let post = { ...user_info, ..._post, id: doc.id, image_url: url }; // 리덕스에 데이터를 추가
-              dispatch(addPost(post));
-              // 페이지를 바꿔치기 한다.
-              history.replace("/");
-
-              dispatch(imageActions.setPreview(null));
-              // 이미지가 업로드 되면 preview를 비워준다.
-            })
-            .catch((err) => {
-              window.alert("게시물 작성에 실패 했습니다.");
-              console.log("게시물 작성 실패", err);
-            });
-        })
-        .catch((err) => {
-          window.alert("이미지 업로드에 실패 했습니다.");
-          console.log("이미지 없로드 실패", err);
-        });
-    });
-  };
 };
 
 const editPostFB = (post_id = null, post = {}) => {
@@ -161,7 +61,7 @@ const editPostFB = (post_id = null, post = {}) => {
 
     const postDB = firestore.collection("post");
 
-    if (_image === _post.image_url) { // 이미지 수정 안했을 경우
+    if (_image === _post.image_url) {
       postDB
         .doc(post_id)
         .update(post)
@@ -171,7 +71,7 @@ const editPostFB = (post_id = null, post = {}) => {
         });
 
       return;
-    } else { // 이미지 수정했을 경우
+    } else {
       const user_id = getState().user.user.uid;
       const _upload = storage
         .ref(`images/${user_id}_${new Date().getTime()}`)
@@ -203,12 +103,185 @@ const editPostFB = (post_id = null, post = {}) => {
   };
 };
 
-// 리듀서
+const addPostFB = (contents = "") => {
+  return function (dispatch, getState, { history }) {
+    const postDB = firestore.collection("post");
+
+    const _user = getState().user.user;
+
+    const user_info = {
+      user_name: _user.user_name,
+      user_id: _user.uid,
+      user_profile: _user.user_profile,
+    };
+
+    const _post = {
+      ...initialPost,
+      contents: contents,
+      insert_dt: moment().format("YYYY-MM-DD hh:mm:ss"),
+    };
+
+    const _image = getState().image.preview;
+
+    console.log(_image);
+    console.log(typeof _image);
+
+    const _upload = storage
+      .ref(`images/${user_info.user_id}_${new Date().getTime()}`)
+      .putString(_image, "data_url");
+
+    _upload.then((snapshot) => {
+      snapshot.ref
+        .getDownloadURL()
+        .then((url) => {
+          console.log(url);
+
+          return url;
+        })
+        .then((url) => {
+          postDB
+            .add({ ...user_info, ..._post, image_url: url })
+            .then((doc) => {
+              let post = { user_info, ..._post, id: doc.id, image_url: url };
+              dispatch(addPost(post));
+              history.replace("/");
+
+              dispatch(imageActions.setPreview(null));
+            })
+            .catch((err) => {
+              window.alert("앗! 포스트 작성에 문제가 있어요!");
+              console.log("post 작성에 실패했어요!", err);
+            });
+        })
+        .catch((err) => {
+          window.alert("앗! 이미지 업로드에 문제가 있어요!");
+          console.log("앗! 이미지 업로드에 문제가 있어요!", err);
+        });
+    });
+  };
+};
+
+const getPostFB = (start = null, size = 3) => {
+  return function (dispatch, getState, { history }) {
+    let _paging = getState().post.paging;
+
+    if (_paging.start && !_paging.next) {
+      // 다음 페이지가 없으면 돌아가
+      return;
+    }
+
+    dispatch(loading(true)); // 로딩 처리
+
+    const postDB = firestore.collection("post"); // 참조
+
+    // 쿼리 날려서 날짜순으로 불러오기
+    let query = postDB.orderBy("insert_dt", "desc");
+    // postDB : 어떤 collection에서 가져 올 지
+    // orderBy : 어떤 걸 기준으로 어떻게 정렬 할 지
+    // limit(갯수) : 최대 몇개를 가져올 지
+
+    if (start) {
+      query = query.startAt(start);
+    }
+
+    query
+      .limit(size + 1) // 다음 페이지가 있는 지 없는 지 판별하기 위해서 갯수를 +1 한다.
+      .get() // 가져올 때 사용
+      .then((docs) => {
+        // 가져온 결과값을 docs로 받아온다.
+        let post_list = [];
+
+        let paging = {
+          // 페이징 처리
+          start: docs.docs[0],
+          next:
+            docs.docs.length === size + 1
+              ? docs.docs[docs.docs.length - 1]
+              : null,
+          // 다음 게시물이 있으면 next에 다음 게시물 정보를 넣고, 없으면 null을 넣는다.
+          size: size,
+        };
+
+        // redux에 넣기 전에 가져온 데이터와 redux의 initialState의 형식을 맞춰준다.
+        docs.forEach((doc) => {
+          let _post = doc.data();
+
+          // 형식 맞춰주기
+          let post = Object.keys(_post).reduce(
+            (acc, cur) => {
+              if (cur.indexOf("user_") !== -1) {
+                return {
+                  ...acc,
+                  user_info: { ...acc.user_info, [cur]: _post[cur] },
+                };
+              }
+              return { ...acc, [cur]: _post[cur] };
+            },
+            { id: doc.id, user_info: {} }
+          );
+
+          post_list.push(post);
+        });
+
+        post_list.pop(); // docs는 게시물 4개를 불러오기 때문에 마지막 게시물은 삭제한다.
+
+        // 데이터를 redux에 넣는다.
+        dispatch(setPost(post_list, paging));
+      });
+  };
+};
+
+// 게시물 하나만 가져오기
+const getOnePostFB = (id) => {
+  return function (dispatch, getState, { history }) {
+    const postDB = firestore.collection("post");
+    postDB
+      .doc(id)
+      .get()
+      .then((doc) => {
+        // 형식 맞춰주기
+        let _post = doc.data();
+        let post = Object.keys(_post).reduce(
+          (acc, cur) => {
+            if (cur.indexOf("user_") !== -1) {
+              return {
+                ...acc,
+                user_info: { ...acc.user_info, [cur]: _post[cur] },
+              };
+            }
+            return { ...acc, [cur]: _post[cur] };
+          },
+          { id: doc.id, user_info: {} }
+        );  
+        
+        // 리덕스에 데이터 넣기
+        dispatch(setPost([post]))
+      });
+  };
+};
+
 export default handleActions(
   {
     [SET_POST]: (state, action) =>
       produce(state, (draft) => {
-        draft.list = action.payload.post_list;
+        draft.list.push(...action.payload.post_list);
+
+        // 중복 제거
+        draft.list = draft.list.reduce((acc, cur) => {
+          if(acc.findIndex(a => a.id === cur.id) === -1){
+            return [...acc, cur];
+            // 중복되는 값이 없으면 기존 배열에 데이터를 넣어서 새로운 배열을 만든다.
+          }else{
+            acc[acc.findIndex(a => a.id === cur.id)] = cur; // 최신값으로 덮어 씌운다.
+            return acc;
+          }
+        }, []);
+
+        if(action.payload.paging) {
+          draft.paging = action.payload.paging;
+        }
+
+        draft.is_loading = false;
       }),
 
     [ADD_POST]: (state, action) =>
@@ -221,17 +294,23 @@ export default handleActions(
 
         draft.list[idx] = { ...draft.list[idx], ...action.payload.post };
       }),
+    [LOADING]: (state, action) =>
+      // 로딩 처리
+      produce(state, (draft) => {
+        draft.is_loading = action.payload.is_loading;
+      }),
   },
   initialState
 );
 
-// 액션 export
 const actionCreators = {
   setPost,
   addPost,
+  editPost,
   getPostFB,
   addPostFB,
   editPostFB,
+  getOnePostFB,
 };
 
 export { actionCreators };

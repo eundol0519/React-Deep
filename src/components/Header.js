@@ -8,8 +8,6 @@ import { actionCreators as userActions } from "../redux/modules/user";
 import { history } from "../redux/configureStore";
 import { apiKey } from "../shared/firebase";
 
-import Permit from "../shared/Permit";
-
 const Header = (props) => {
   const dispatch = useDispatch();
   const is_login = useSelector((state) => state.user.is_login);
@@ -20,9 +18,13 @@ const Header = (props) => {
 
   if (is_login && is_session) {
     return (
-      <Permit>
+      <React.Fragment>
         <Grid is_flex padding="4px 16px">
-          <Grid>
+          <Grid
+            _onClick={() => {
+              history.push("/");
+            }}
+          >
             <Text margin="0px" size="24px" bold>
               헬로
             </Text>
@@ -31,10 +33,10 @@ const Header = (props) => {
           <Grid is_flex>
             <Button text="내정보"></Button>
             <Button
-              text="알림"
               _onClick={() => {
                 history.push("/noti");
               }}
+              text="알림"
             ></Button>
             <Button
               text="로그아웃"
@@ -44,14 +46,18 @@ const Header = (props) => {
             ></Button>
           </Grid>
         </Grid>
-      </Permit>
+      </React.Fragment>
     );
   }
 
   return (
     <React.Fragment>
       <Grid is_flex padding="4px 16px">
-        <Grid>
+        <Grid
+          _onClick={() => {
+            history.push("/");
+          }}
+        >
           <Text margin="0px" size="24px" bold>
             헬로
           </Text>

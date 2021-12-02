@@ -1,7 +1,7 @@
 import firebase from "firebase/app";
 import "firebase/auth";
-import 'firebase/firestore'; // 파이어스토어 데이터베이스 연동
-import 'firebase/storage' // 스토리지 서비스 연동
+import "firebase/firestore";
+import "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBJt3j3tOxiEPsbf5amaCHqKdqVopjx--k",

@@ -15,7 +15,7 @@ const Button = (props) => {
   const styles = {
     margin: margin,
     width: width,
-    padding : padding,
+    padding: padding,
   };
 
   return (
@@ -31,8 +31,8 @@ Button.defaultProps = {
   _onClick: () => {},
   is_float: false,
   margin: false,
-  width: '100%',
-  padding : "12px 0px",
+  width: "100%",
+  padding: "12px 0px",
 };
 
 const ElButton = styled.button`
@@ -42,7 +42,7 @@ const ElButton = styled.button`
   padding: ${(props) => props.padding};
   box-sizing: border-box;
   border: none;
-  ${(props) => (props.margin? `margin: ${props.margin};` : '')}
+  ${(props) => (props.margin ? `margin: ${props.margin};` : "")}
 `;
 
 const FloatButton = styled.button`

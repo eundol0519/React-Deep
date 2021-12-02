@@ -1,31 +1,23 @@
 import React from "react";
-// import Grid from "../elements/Grid";
-// import Image from "../elements/Image";
-// import Text from "../elements/Text";
-
 import { Grid, Image, Text, Button } from "../elements";
-import { history } from "../redux/configureStore";
 
-const Post = (props) => {
+import {history} from "../redux/configureStore";
+
+ const Post = (props) => {
   return (
     <React.Fragment>
       <Grid>
         <Grid is_flex padding="16px">
           <Grid is_flex width="auto">
-            <Image shape="circle" src={props.user_profile} />
+            <Image shape="circle" src={props.src} />
             <Text bold>{props.user_info.user_name}</Text>
           </Grid>
           <Grid is_flex width="auto">
             <Text>{props.insert_dt}</Text>
             {props.is_me && (
-              <Button
-                width="auto"
-                padding="4px"
-                margin="4px"
-                _onClick={() => {
-                  history.push(`/write/${props.id}`);
-                }}
-              >
+              <Button width="auto" margin="4px" padding="4px" _onClick={() => {
+                history.push(`/write/${props.id}`);
+              }}>
                 수정
               </Button>
             )}
@@ -50,9 +42,9 @@ const Post = (props) => {
 Post.defaultProps = {
   user_info: {
     user_name: "mean0",
-    user_profile: "https://i.ytimg.com/vi/Ct1Pp_4FEIY/maxresdefault.jpg",
+    user_profile: "https://mean0images.s3.ap-northeast-2.amazonaws.com/4.jpeg",
   },
-  image_url: "https://i.ytimg.com/vi/Ct1Pp_4FEIY/maxresdefault.jpg",
+  image_url: "https://mean0images.s3.ap-northeast-2.amazonaws.com/4.jpeg",
   contents: "고양이네요!",
   comment_cnt: 10,
   insert_dt: "2021-02-27 10:00:00",

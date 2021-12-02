@@ -1,22 +1,42 @@
 import React from "react";
 import { Grid, Image, Text } from "../elements";
 
-const CommentList = () => {
+import { useSelector, useDispatch } from "react-redux";
+import { actionCreators as commentActions } from "../redux/modules/comment";
+
+const CommentList = (props) => {
+  
+  const dispatch = useDispatch();
+
+  const { post_id } = props;
+  const comment_list = useSelector((state) => state.comment.list)
+
+  React.useEffect(()=>{
+    if(!comment_list[post_id]){ // 해당 게시물의 댓글 정보가 없으면 불러온다.
+      dispatch(commentActions.getCommentFB(post_id))
+    }
+  }, [])
+
+  if(!comment_list[post_id] || !post_id){
+    return null;
+  }
+
   return (
     <React.Fragment>
       <Grid padding="16px">
-        <CommentItem />
-        <CommentItem />
-        <CommentItem />
-        <CommentItem />
-        <CommentItem />
-        <CommentItem />
+        {comment_list[post_id].map(c => {
+          return <CommentItem key={c.id} {...c} />
+        })}
       </Grid>
     </React.Fragment>
   );
 };
 
 export default CommentList;
+
+CommentList.defaultProps = {
+  post_id : null,
+}
 
 const CommentItem = (props) => {
   const { user_profile, user_name, user_id, post_id, contents, insert_dt } =
