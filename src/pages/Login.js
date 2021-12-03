@@ -13,15 +13,14 @@ const Login = (props) => {
   const [pwd, setPwd] = React.useState("");
 
   const login = () => {
-
     console.log(id);
 
-    if(id === "" || pwd === ""){
+    if (id === "" || pwd === "") {
       window.alert("아이디 혹은 비밀번호가 공란입니다! 입력해주세요!");
       return;
     }
 
-    if(!emailCheck(id)){
+    if (!emailCheck(id)) {
       window.alert("이메일 형식이 맞지 않습니다!");
       return;
     }
@@ -54,6 +53,9 @@ const Login = (props) => {
             _onChange={(e) => {
               setPwd(e.target.value);
             }}
+            value={pwd}
+            is_submit
+            onSubmit={login}
           />
         </Grid>
 
