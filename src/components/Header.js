@@ -1,6 +1,7 @@
 import React from "react";
+
+import NotiBadge from "./NotiBadge";
 import { Grid, Text, Button } from "../elements";
-import { getCookie, deleteCookie } from "../shared/Cookie";
 
 import { useSelector, useDispatch } from "react-redux";
 import { actionCreators as userActions } from "../redux/modules/user";
@@ -32,12 +33,17 @@ const Header = (props) => {
 
           <Grid is_flex>
             <Button text="내정보"></Button>
-            <Button
+            {/* <Button
               _onClick={() => {
                 history.push("/noti");
               }}
               text="알림"
-            ></Button>
+            ></Button> */}
+            <NotiBadge
+              _onClick={() => {
+                history.push("/noti");
+              }}
+            />
             <Button
               text="로그아웃"
               _onClick={() => {

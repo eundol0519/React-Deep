@@ -1,6 +1,6 @@
 import { createAction, handleActions } from "redux-actions";
 import { produce } from "immer";
-import { firestore } from "../../shared/firebase";
+import { firestore, realTime } from "../../shared/firebase";
 import moment from "moment";
 import firebase from "firebase/app";
 
@@ -48,6 +48,7 @@ const addCommentFB = (post_id, contents) => {
     commentDB.add(comment).then((doc) => {
       const postDB = firestore.collection("post");
       const post = getState().post.list.find((l) => l.id === post_id);
+      const user = getState().user.user; // 다른 사람이 작성 했다는 걸 알기 위해서 불러옴
 
       const increment = firebase.firestore.FieldValue.increment(1);
       // 인자에 들어간 값만큼 현재 값에서 추가 해준다.
@@ -65,6 +66,33 @@ const addCommentFB = (post_id, contents) => {
                 comment_cnt: parseInt(post.comment_cnt) + 1,
               })
             ); // 리덕스만 고쳐주면 됨
+
+            if (post.user_info.user_id === user.uid) {
+              // 게시물 작성자가 댓글을 달았을 때는 알림 울리지 않게
+              return;
+            }
+
+            const _noti_item = realTime
+              .ref(`noti/${post.user_info.user_id}/list`)
+              .push(); // 구독
+
+            _noti_item.set(
+              {
+                post_id: post.id,
+                user_name: comment.user_name,
+                image_url: post.image_url,
+                insert_dt: comment.insert_dt,
+              },
+              (err) => {
+                if (err) { // 알람 저장 실패
+                  console.log("알림 저장에 실패", err);
+                } else { // 알람 저장 성공 -> read 수정
+                  const notiDB = realTime.ref(`noti/${post.user_info.user_id}`);
+
+                  notiDB.update({ read: false });
+                }
+              }
+            );
           }
         });
     });
